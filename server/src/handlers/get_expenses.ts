@@ -1,9 +1,23 @@
 
+import { db } from '../db';
+import { expensesTable } from '../db/schema';
 import { type Expense } from '../schema';
+import { desc } from 'drizzle-orm';
 
 export async function getExpenses(): Promise<Expense[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching expense records with optional filtering
-    // by date range, category, or vendor for financial tracking and analysis.
-    return [];
+  try {
+    const results = await db.select()
+      .from(expensesTable)
+      .orderBy(desc(expensesTable.created_at))
+      .execute();
+
+    // Convert numeric fields back to numbers
+    return results.map(expense => ({
+      ...expense,
+      amount: parseFloat(expense.amount)
+    }));
+  } catch (error) {
+    console.error('Get expenses failed:', error);
+    throw error;
+  }
 }

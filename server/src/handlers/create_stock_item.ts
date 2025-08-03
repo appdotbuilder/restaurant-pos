@@ -1,20 +1,34 @@
 
+import { db } from '../db';
+import { stockItemsTable } from '../db/schema';
 import { type CreateStockItemInput, type StockItem } from '../schema';
 
-export async function createStockItem(input: CreateStockItemInput): Promise<StockItem> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new stock item with proper inventory
-    // tracking and minimum quantity alerts setup.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+export const createStockItem = async (input: CreateStockItemInput): Promise<StockItem> => {
+  try {
+    // Insert stock item record
+    const result = await db.insert(stockItemsTable)
+      .values({
         name: input.name,
         description: input.description,
         unit: input.unit,
-        current_quantity: input.current_quantity,
-        minimum_quantity: input.minimum_quantity,
-        unit_cost: input.unit_cost,
-        supplier: input.supplier,
-        last_restocked_at: null,
-        created_at: new Date()
-    } as StockItem);
-}
+        current_quantity: input.current_quantity.toString(), // Convert number to string for numeric column
+        minimum_quantity: input.minimum_quantity.toString(), // Convert number to string for numeric column
+        unit_cost: input.unit_cost.toString(), // Convert number to string for numeric column
+        supplier: input.supplier
+      })
+      .returning()
+      .execute();
+
+    // Convert numeric fields back to numbers before returning
+    const stockItem = result[0];
+    return {
+      ...stockItem,
+      current_quantity: parseFloat(stockItem.current_quantity), // Convert string back to number
+      minimum_quantity: parseFloat(stockItem.minimum_quantity), // Convert string back to number
+      unit_cost: parseFloat(stockItem.unit_cost) // Convert string back to number
+    };
+  } catch (error) {
+    console.error('Stock item creation failed:', error);
+    throw error;
+  }
+};

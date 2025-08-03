@@ -1,18 +1,31 @@
 
+import { db } from '../db';
+import { incomeTable } from '../db/schema';
 import { type CreateIncomeInput, type Income } from '../schema';
 
-export async function createIncome(input: CreateIncomeInput): Promise<Income> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is recording income entries from various sources
-    // for comprehensive financial tracking and reporting.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+export const createIncome = async (input: CreateIncomeInput): Promise<Income> => {
+  try {
+    // Insert income record
+    const result = await db.insert(incomeTable)
+      .values({
         description: input.description,
-        amount: input.amount,
+        amount: input.amount.toString(), // Convert number to string for numeric column
         category: input.category,
         source: input.source,
         date: input.date,
-        recorded_by: 1, // Should get from context/session
-        created_at: new Date()
-    } as Income);
-}
+        recorded_by: 1 // TODO: Should get from context/session
+      })
+      .returning()
+      .execute();
+
+    // Convert numeric fields back to numbers before returning
+    const income = result[0];
+    return {
+      ...income,
+      amount: parseFloat(income.amount) // Convert string back to number
+    };
+  } catch (error) {
+    console.error('Income creation failed:', error);
+    throw error;
+  }
+};
